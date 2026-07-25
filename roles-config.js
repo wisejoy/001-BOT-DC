@@ -3,15 +3,10 @@
  *  KONFIGURASI REACTION ROLES
  * ════════════════════════════════════════════════════════════════
  *
- *  CARA MENGISI EMOJI:
- *
- *  [Opsi A] Pakai Custom Emoji Server (Emoji Upload Sendiri):
- *     emoji: 'nama_emoji',             // nama emoji (tanpa < : >)
- *     emojiId: '123456789012345678',   // ID emoji (dapat dari \:namaemoji:)
- *
- *  [Opsi B] Pakai Emoji Biasa (Bawaan HP / Discord):
- *     emoji: '🎮',                     // karakter emoji langsung
- *     // emojiId tidak perlu diisi / hapus baris emojiId
+ *  CARA PAKAI CUSTOM EMOJI SERVER:
+ *  1. Ketik \:namaemoji: di chat Discord (contoh: \:freefire:)
+ *  2. Enter, nanti keluar: <:freefire:1234567890123456789>
+ *  3. Copy NAMA emoji ('freefire') & ID emoji ('1234567890123456789')
  * ════════════════════════════════════════════════════════════════
  */
 
@@ -25,22 +20,13 @@ module.exports = {
       description: '🎮 REACTION SESUAI GAME YANG KALIAN MAINKAN !!!!',
       color: 0x5865f2,
       roles: [
-        // 📌 CONTOH 1: Paling pas untuk Custom Emoji Server kamu
+        // 👇 CONTOH CUSTOM EMOJI SERVER 👇
         {
-          emoji: 'freefire',              // nama emoji kamu
-          emojiId: 'ID_EMOJI_FREEFIRE',   // ID emoji kamu (opsional jika emoji biasa)
-          label: 'Free Fire',             // Nama role di embed
-          roleId: 'ROLE_ID_FREEFIRE',     // ID Role dari Discord Server
+          emoji: 'freefire',              // nama custom emoji kamu di Discord
+          emojiId: '1234567890123456789', // ID custom emoji kamu
+          label: 'Free Fire',             // Nama role yang akan tampil
+          roleId: 'ROLE_ID_FREEFIRE',     // ID Role yang di-copy dari Server Settings
         },
-
-        /* 💡 TEMPLATE: Copas blok di bawah jika mau tambah game baru 
-        {
-          emoji: 'NAMA_ATAU_EMOJI',
-          // emojiId: 'ID_EMOJI_DISINI',
-          label: 'Nama Game',
-          roleId: 'ROLE_ID_DISINI',
-        },
-        */
       ],
     },
 
