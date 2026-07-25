@@ -28,17 +28,23 @@ module.exports = {
           roleId: '1530503842418917426',     // ID Role yang di-copy dari Server Settings
         },
         {
-          emoji: 'Mobile Legends',
+          emoji: 'ml',
           emojiId: '1530506101483634708', // ID custom emoji kamu
           label: 'Mobile Legends',             // Nama role yang akan tampil
           roleId: '1530506474151739422',     // ID Role yang di-copy dari Server Settings
         },
         {
-          emoji: 'Roblox',
+          emoji: 'roblox',
           emojiId: '1530506335949426798', // ID custom emoji kamu
-          label: 'Roblox',             // Nama role yang akan tampil
+          label: 'roblox',             // Nama role yang akan tampil
           roleId: '1530507071869550682',     // ID Role yang di-copy dari Server Settings
-        }
+        },
+        {
+          emoji: 'valorant',
+          emojiId: '1530511056177467422', // ID custom emoji kamu
+          label: 'valorant',             // Nama role yang akan tampil
+          roleId: '1530512318423765083',     // ID Role yang di-copy dari Server Settings
+        },
       ],
     },
 
@@ -52,13 +58,13 @@ module.exports = {
       roles: [
         {
           emoji: '👦',
-          label: 'Boy',
-          roleId: 'ROLE_ID_DISINI',
+          label: 'Male',
+          roleId: '884623833020133417',
         },
         {
           emoji: '👧',
-          label: 'Girls',
-          roleId: 'ROLE_ID_DISINI',
+          label: 'Female',
+          roleId: '884624113535156264',
         },
       ],
     },
