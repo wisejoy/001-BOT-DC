@@ -3,13 +3,15 @@
  *  KONFIGURASI REACTION ROLES
  * ════════════════════════════════════════════════════════════════
  *
- *  CARA PAKAI EMOJI:
- *  1. Emoji Bawaan (Unicode):
- *     emoji: '🎮',
+ *  CARA MENGISI EMOJI:
  *
- *  2. Custom Emoji Server (Emoji Upload Sendiri):
- *     emoji: 'freefire',              // nama emoji
- *     emojiId: '1234567890987654321', // ID emoji (dapat dari \:namaemoji:)
+ *  [Opsi A] Pakai Custom Emoji Server (Emoji Upload Sendiri):
+ *     emoji: 'nama_emoji',             // nama emoji (tanpa < : >)
+ *     emojiId: '123456789012345678',   // ID emoji (dapat dari \:namaemoji:)
+ *
+ *  [Opsi B] Pakai Emoji Biasa (Bawaan HP / Discord):
+ *     emoji: '🎮',                     // karakter emoji langsung
+ *     // emojiId tidak perlu diisi / hapus baris emojiId
  * ════════════════════════════════════════════════════════════════
  */
 
@@ -23,48 +25,22 @@ module.exports = {
       description: '🎮 REACTION SESUAI GAME YANG KALIAN MAINKAN !!!!',
       color: 0x5865f2,
       roles: [
+        // 📌 CONTOH 1: Paling pas untuk Custom Emoji Server kamu
         {
-          emoji: '🎮',
-          // emojiId: 'ID_EMOJI_DISINI', // isi jika pakai custom emoji
-          label: 'Free Fire',
-          roleId: 'ROLE_ID_DISINI',
+          emoji: 'freefire',              // nama emoji kamu
+          emojiId: 'ID_EMOJI_FREEFIRE',   // ID emoji kamu (opsional jika emoji biasa)
+          label: 'Free Fire',             // Nama role di embed
+          roleId: 'ROLE_ID_FREEFIRE',     // ID Role dari Discord Server
         },
+
+        /* 💡 TEMPLATE: Copas blok di bawah jika mau tambah game baru 
         {
-          emoji: '⚔️',
+          emoji: 'NAMA_ATAU_EMOJI',
           // emojiId: 'ID_EMOJI_DISINI',
-          label: 'Mobile Legends',
+          label: 'Nama Game',
           roleId: 'ROLE_ID_DISINI',
         },
-        {
-          emoji: '🎯',
-          // emojiId: 'ID_EMOJI_DISINI',
-          label: 'PUBG',
-          roleId: 'ROLE_ID_DISINI',
-        },
-        {
-          emoji: '🧱',
-          // emojiId: 'ID_EMOJI_DISINI',
-          label: 'Roblox',
-          roleId: 'ROLE_ID_DISINI',
-        },
-        {
-          emoji: '🚗',
-          // emojiId: 'ID_EMOJI_DISINI',
-          label: 'GTA V',
-          roleId: 'ROLE_ID_DISINI',
-        },
-        {
-          emoji: '🟥',
-          // emojiId: 'ID_EMOJI_DISINI',
-          label: 'Valorant',
-          roleId: 'ROLE_ID_DISINI',
-        },
-        {
-          emoji: '😺',
-          // emojiId: 'ID_EMOJI_DISINI',
-          label: 'OwO Players',
-          roleId: 'ROLE_ID_DISINI',
-        },
+        */
       ],
     },
 
@@ -78,13 +54,11 @@ module.exports = {
       roles: [
         {
           emoji: '👦',
-          // emojiId: 'ID_EMOJI_DISINI',
           label: 'Boy',
           roleId: 'ROLE_ID_DISINI',
         },
         {
           emoji: '👧',
-          // emojiId: 'ID_EMOJI_DISINI',
           label: 'Girls',
           roleId: 'ROLE_ID_DISINI',
         },
