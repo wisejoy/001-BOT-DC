@@ -1,5 +1,14 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits } = require('discord.js');
+const {
+  Client,
+  GatewayIntentBits,
+  Partials,
+  EmbedBuilder,
+  REST,
+  Routes,
+  SlashCommandBuilder,
+  PermissionFlagsBits,
+} = require('discord.js');
 const {
   joinVoiceChannel,
   createAudioPlayer,
@@ -10,17 +19,78 @@ const {
   entersState,
 } = require('@discordjs/voice');
 const { Readable } = require('stream');
+const fs = require('fs');
+const path = require('path');
 
-const { DISCORD_TOKEN, GUILD_ID, VOICE_CHANNEL_ID } = process.env;
+const rolesConfig = require('./roles-config');
 
-if (!DISCORD_TOKEN || !GUILD_ID || !VOICE_CHANNEL_ID) {
-  console.error('❌ DISCORD_TOKEN, GUILD_ID, atau VOICE_CHANNEL_ID belum diisi di .env');
+// ─────────────────────────────────────────────────────────────────────────────
+//  ENV VALIDATION
+// ─────────────────────────────────────────────────────────────────────────────
+const { DISCORD_TOKEN, GUILD_ID, VOICE_CHANNEL_ID, CLIENT_ID } = process.env;
+
+if (!DISCORD_TOKEN || !GUILD_ID || !VOICE_CHANNEL_ID || !CLIENT_ID) {
+  console.error(
+    '❌ Variabel berikut belum diisi di .env:\n' +
+    [
+      !DISCORD_TOKEN  && '  - DISCORD_TOKEN',
+      !GUILD_ID       && '  - GUILD_ID',
+      !VOICE_CHANNEL_ID && '  - VOICE_CHANNEL_ID',
+      !CLIENT_ID      && '  - CLIENT_ID  (Application ID dari Discord Developer Portal)',
+    ]
+      .filter(Boolean)
+      .join('\n')
+  );
   process.exit(1);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  REACTION MESSAGES STORAGE
+//  Menyimpan { messageId → categoryIndex } agar bot tahu
+//  pesan mana yang dipantau untuk reaction roles.
+// ─────────────────────────────────────────────────────────────────────────────
+const MESSAGES_FILE = path.join(__dirname, 'reaction-messages.json');
+
+function loadActiveMessages() {
+  try {
+    if (fs.existsSync(MESSAGES_FILE)) {
+      return JSON.parse(fs.readFileSync(MESSAGES_FILE, 'utf8'));
+    }
+  } catch (err) {
+    console.warn('⚠️ Gagal load reaction-messages.json:', err.message);
+  }
+  return {};
+}
+
+function saveActiveMessages(data) {
+  try {
+    fs.writeFileSync(MESSAGES_FILE, JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.error('❌ Gagal simpan reaction-messages.json:', err.message);
+  }
+}
+
+// Peta aktif: { [messageId]: categoryIndex }
+let activeMessages = loadActiveMessages();
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  DISCORD CLIENT
+// ─────────────────────────────────────────────────────────────────────────────
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildMessageReactions, // ← untuk reaction roles
+    GatewayIntentBits.GuildMembers,          // ← untuk assign/remove role
+  ],
+  // Partials diperlukan agar bot bisa handle reaction di pesan yang
+  // belum ada di cache (misalnya setelah bot restart)
+  partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  VOICE 24/7  (fitur lama, tidak diubah)
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Stream "silence" Opus frame supaya koneksi voice tetap hidup tanpa suara nyata
 function createSilenceStream() {
@@ -77,7 +147,6 @@ async function connectToVoice() {
       if (reconnecting) return;
       reconnecting = true;
       try {
-        // Coba reconnect otomatis (misal ganti region voice)
         await Promise.race([
           entersState(connection, VoiceConnectionStatus.Signalling, 5_000),
           entersState(connection, VoiceConnectionStatus.Connecting, 5_000),
@@ -104,8 +173,221 @@ async function connectToVoice() {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  SLASH COMMAND REGISTRATION
+// ─────────────────────────────────────────────────────────────────────────────
+async function registerCommands() {
+  const commands = [
+    new SlashCommandBuilder()
+      .setName('setup-roles')
+      .setDescription('📋 Buat pesan reaction roles di channel ini (hanya Admin)')
+      .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+      .toJSON(),
+  ];
+
+  const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
+  try {
+    await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), {
+      body: commands,
+    });
+    console.log('✅ Slash command /setup-roles berhasil didaftarkan');
+  } catch (err) {
+    console.error('❌ Gagal mendaftarkan slash command:', err.message);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  SETUP ROLES HANDLER
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Kembalikan string emoji yang bisa digunakan untuk msg.react()
+ * - Custom emoji server : "namaEmoji:emojiId"
+ * - Unicode emoji       : karakter langsung (contoh: "🎮")
+ */
+function getEmojiString(roleEntry) {
+  return roleEntry.emojiId
+    ? `${roleEntry.emoji}:${roleEntry.emojiId}`
+    : roleEntry.emoji;
+}
+
+async function handleSetupRoles(interaction) {
+  await interaction.deferReply({ ephemeral: true });
+
+  const channel = interaction.channel;
+  const newActiveMessages = {};
+  let successCount = 0;
+
+  for (let i = 0; i < rolesConfig.categories.length; i++) {
+    const category = rolesConfig.categories[i];
+
+    // Baris daftar role: "> emoji : @Label"
+    const roleLines = category.roles
+      .map((r) => `> ${r.emoji} : @${r.label}`)
+      .join('\n');
+
+    const divider = '─'.repeat(35);
+
+    const embed = new EmbedBuilder()
+      .setTitle(`**${category.name}**`)
+      .setDescription(`${category.description}\n\n${divider}\n${roleLines}\n${divider}`)
+      .setColor(category.color ?? 0x2b2d31);
+
+    try {
+      const msg = await channel.send({ embeds: [embed] });
+
+      // Tambahkan reaction emoji satu per satu (berurutan)
+      for (const role of category.roles) {
+        try {
+          await msg.react(getEmojiString(role));
+        } catch {
+          console.warn(`⚠️ Gagal react ${role.emoji} untuk "${role.label}" — pastikan emoji valid`);
+        }
+      }
+
+      newActiveMessages[msg.id] = i;
+      successCount++;
+      console.log(`📋 Kategori "${category.name}" selesai (msgId: ${msg.id})`);
+    } catch (err) {
+      console.error(`❌ Gagal kirim embed kategori "${category.name}":`, err.message);
+    }
+  }
+
+  // Simpan ke file supaya tetap aktif setelah bot restart
+  Object.assign(activeMessages, newActiveMessages);
+  saveActiveMessages(activeMessages);
+
+  await interaction.editReply(
+    `✅ Reaction roles berhasil di-setup! (${successCount}/${rolesConfig.categories.length} kategori)\n` +
+    `💡 Jangan lupa isi **Role ID** di \`roles-config.js\` jika belum.`
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  REACTION ROLE HELPER
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Cari konfigurasi role dari emoji yang di-react
+ */
+function findRoleConfig(categoryIndex, reactionEmoji) {
+  const category = rolesConfig.categories[categoryIndex];
+  if (!category) return null;
+
+  return category.roles.find((r) => {
+    // Custom emoji → cocokkan by ID
+    if (r.emojiId) return reactionEmoji.id === r.emojiId;
+    // Unicode emoji → cocokkan by nama/karakter
+    return reactionEmoji.name === r.emoji;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  EVENT: INTERACTION (Slash Commands)
+// ─────────────────────────────────────────────────────────────────────────────
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  if (interaction.commandName === 'setup-roles') {
+    handleSetupRoles(interaction).catch((err) => {
+      console.error('❌ Error di handleSetupRoles:', err.message);
+      interaction
+        .editReply('❌ Terjadi error. Cek console bot untuk detail.')
+        .catch(() => {});
+    });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  EVENT: REACTION ADD → Assign Role
+// ─────────────────────────────────────────────────────────────────────────────
+client.on('messageReactionAdd', async (reaction, user) => {
+  if (user.bot) return;
+
+  // Fetch data jika belum di-cache (penting setelah bot restart)
+  if (reaction.partial) {
+    try {
+      await reaction.fetch();
+    } catch {
+      return;
+    }
+  }
+
+  const categoryIndex = activeMessages[reaction.message.id];
+  if (categoryIndex === undefined) return; // Bukan pesan reaction roles
+
+  const roleConf = findRoleConfig(categoryIndex, reaction.emoji);
+  if (!roleConf) return;
+
+  if (roleConf.roleId === 'ROLE_ID_DISINI') {
+    console.warn(`⚠️ Role ID belum diisi untuk "${roleConf.label}" di roles-config.js`);
+    return;
+  }
+
+  try {
+    const guild = reaction.message.guild;
+    const member = await guild.members.fetch(user.id);
+    const role =
+      guild.roles.cache.get(roleConf.roleId) ??
+      (await guild.roles.fetch(roleConf.roleId));
+
+    if (!role) {
+      console.warn(`⚠️ Role tidak ditemukan di server: ${roleConf.roleId}`);
+      return;
+    }
+
+    await member.roles.add(role);
+    console.log(`✅ [+ROLE] "${role.name}" → ${user.tag}`);
+  } catch (err) {
+    console.error(`❌ Gagal assign role ke ${user.tag}:`, err.message);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  EVENT: REACTION REMOVE → Remove Role
+// ─────────────────────────────────────────────────────────────────────────────
+client.on('messageReactionRemove', async (reaction, user) => {
+  if (user.bot) return;
+
+  if (reaction.partial) {
+    try {
+      await reaction.fetch();
+    } catch {
+      return;
+    }
+  }
+
+  const categoryIndex = activeMessages[reaction.message.id];
+  if (categoryIndex === undefined) return;
+
+  const roleConf = findRoleConfig(categoryIndex, reaction.emoji);
+  if (!roleConf) return;
+
+  if (roleConf.roleId === 'ROLE_ID_DISINI') return;
+
+  try {
+    const guild = reaction.message.guild;
+    const member = await guild.members.fetch(user.id);
+    const role =
+      guild.roles.cache.get(roleConf.roleId) ??
+      (await guild.roles.fetch(roleConf.roleId));
+
+    if (!role) return;
+
+    await member.roles.remove(role);
+    console.log(`🗑️ [-ROLE] "${role.name}" ← ${user.tag}`);
+  } catch (err) {
+    console.error(`❌ Gagal remove role dari ${user.tag}:`, err.message);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  BOT READY
+// ─────────────────────────────────────────────────────────────────────────────
 client.once('ready', () => {
   console.log(`🤖 Login sebagai ${client.user.tag}`);
+  console.log(`📌 Reaction roles aktif: ${Object.keys(activeMessages).length} pesan terpantau`);
+  registerCommands();
   connectToVoice();
 });
 
