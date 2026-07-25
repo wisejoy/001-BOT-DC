@@ -1,3 +1,18 @@
+/**
+ * ════════════════════════════════════════════════════════════════
+ *  KONFIGURASI REACTION ROLES
+ * ════════════════════════════════════════════════════════════════
+ *
+ *  CARA PAKAI EMOJI:
+ *  1. Emoji Bawaan (Unicode):
+ *     emoji: '🎮',
+ *
+ *  2. Custom Emoji Server (Emoji Upload Sendiri):
+ *     emoji: 'freefire',              // nama emoji
+ *     emojiId: '1234567890987654321', // ID emoji (dapat dari \:namaemoji:)
+ * ════════════════════════════════════════════════════════════════
+ */
+
 module.exports = {
   categories: [
     // ───────────────────────────────────────────────
@@ -10,36 +25,43 @@ module.exports = {
       roles: [
         {
           emoji: '🎮',
+          // emojiId: 'ID_EMOJI_DISINI', // isi jika pakai custom emoji
           label: 'Free Fire',
           roleId: 'ROLE_ID_DISINI',
         },
         {
           emoji: '⚔️',
+          // emojiId: 'ID_EMOJI_DISINI',
           label: 'Mobile Legends',
           roleId: 'ROLE_ID_DISINI',
         },
         {
           emoji: '🎯',
+          // emojiId: 'ID_EMOJI_DISINI',
           label: 'PUBG',
           roleId: 'ROLE_ID_DISINI',
         },
         {
           emoji: '🧱',
+          // emojiId: 'ID_EMOJI_DISINI',
           label: 'Roblox',
           roleId: 'ROLE_ID_DISINI',
         },
         {
           emoji: '🚗',
+          // emojiId: 'ID_EMOJI_DISINI',
           label: 'GTA V',
           roleId: 'ROLE_ID_DISINI',
         },
         {
           emoji: '🟥',
+          // emojiId: 'ID_EMOJI_DISINI',
           label: 'Valorant',
           roleId: 'ROLE_ID_DISINI',
         },
         {
           emoji: '😺',
+          // emojiId: 'ID_EMOJI_DISINI',
           label: 'OwO Players',
           roleId: 'ROLE_ID_DISINI',
         },
@@ -56,11 +78,13 @@ module.exports = {
       roles: [
         {
           emoji: '👦',
+          // emojiId: 'ID_EMOJI_DISINI',
           label: 'Boy',
           roleId: 'ROLE_ID_DISINI',
         },
         {
           emoji: '👧',
+          // emojiId: 'ID_EMOJI_DISINI',
           label: 'Girls',
           roleId: 'ROLE_ID_DISINI',
         },
