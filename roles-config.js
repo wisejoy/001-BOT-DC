@@ -27,6 +27,18 @@ module.exports = {
           label: 'Free Fire',             // Nama role yang akan tampil
           roleId: '1530503842418917426',     // ID Role yang di-copy dari Server Settings
         },
+        {
+          emoji: 'Mobile Legends',
+          emojiId: '1530506101483634708', // ID custom emoji kamu
+          label: 'Mobile Legends',             // Nama role yang akan tampil
+          roleId: '1530506474151739422',     // ID Role yang di-copy dari Server Settings
+        },
+        {
+          emoji: 'Roblox',
+          emojiId: '1530506335949426798', // ID custom emoji kamu
+          label: 'Roblox',             // Nama role yang akan tampil
+          roleId: '1530507071869550682',     // ID Role yang di-copy dari Server Settings
+        }
       ],
     },
 
