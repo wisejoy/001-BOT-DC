@@ -23,9 +23,9 @@ module.exports = {
         // 👇 CONTOH CUSTOM EMOJI SERVER 👇
         {
           emoji: 'freefire',              // nama custom emoji kamu di Discord
-          emojiId: '1234567890123456789', // ID custom emoji kamu
+          emojiId: '1530502307043872888', // ID custom emoji kamu
           label: 'Free Fire',             // Nama role yang akan tampil
-          roleId: 'ROLE_ID_FREEFIRE',     // ID Role yang di-copy dari Server Settings
+          roleId: '1530503842418917426',     // ID Role yang di-copy dari Server Settings
         },
       ],
     },
